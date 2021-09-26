@@ -51,7 +51,6 @@ class ProductViewSet(viewsets.ModelViewSet):
         product.delete()
         return Response({'message': 'Producto eliminado'})
 
-
 class OrderViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
