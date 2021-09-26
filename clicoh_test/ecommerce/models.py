@@ -10,12 +10,16 @@ class Order(models.Model):
 
     def get_total(self):
         total = 0
-        _orderDetails = OrderDetail.objects.filter(order=self.id)
-        for orderDetail in _orderDetails:
-            total += orderDetail.price
+        try:
+            _orderDetails = OrderDetail.objects.filter(order=self.id)
+            for orderDetail in _orderDetails:
+                total += orderDetail.price
+            return total
+        except:
+            return total
 
 class OrderDetail(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=0)
     price = models.FloatField(default=0.0)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)

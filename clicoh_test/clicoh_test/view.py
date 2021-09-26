@@ -1,6 +1,5 @@
 from django.shortcuts import get_object_or_404
 from ecommerce.models import Product, Order, OrderDetail
-from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.utils.timezone import now
 from rest_framework import viewsets
@@ -29,8 +28,10 @@ class ProductViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         product = self.get_object()
         product_data = request.data
-        product.name = product_data.get('name')
-        product.price = product_data.get('price')
+        product_name = product_data.get('name')
+        product_price = float(product_data.get('price'))
+        product.name = product_name if product_name != None else product.name
+        product.price = product_price if product_price != None else product.price
         product.save()
         serializer = ProductSerializer(product)
         return Response(serializer.data)
@@ -38,9 +39,9 @@ class ProductViewSet(viewsets.ModelViewSet):
     #Post at /api/products/
     def create(self, request, *arg, **kwargs):
         product_data = request.data
-        precio = float(product_data.get('price'))
+        price = float(product_data.get('price'))
         name = product_data.get('name')
-        new_product = Product.objects.create(name=name, price=precio)
+        new_product = Product.objects.create(name=name, price=price)
         new_product.save()
         serializer = ProductSerializer(new_product)
         return Response(serializer.data)
@@ -133,13 +134,19 @@ class OrderDetailsViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         order_detail_data = request.data
         order_detail = self.get_object()
-        order_detail.quantity = order_detail_data.get('quantity') if order_detail_data.get('quantity') != None else order_detail.quantity
-        order_detail.product_id = order_detail_data.get('product_id') if order_detail_data.get('product_id') != None else order_detail.product_id
-        product = get_object_or_404(Product, pk=order_detail.product_id)
-        order_detail.price = float(product.price) * int(order_detail.quantity)
-        order_detail.save()
-        serializer = OrderDetailSerializer(order_detail)
-        return Response(serializer.data)
+        product_id = order_detail_data.get('product_id')
+        try:
+            OrderDetail.objects.get(order_id=order_detail.order_id, product_id=product_id)
+            return Response({'message': 'El producto ya esta en el pedido'})
+        except OrderDetail.DoesNotExist:
+            quantity = order_detail_data.get('quantity')
+            order_detail.quantity = quantity if quantity != None else order_detail.quantity
+            order_detail.product_id = product_id if product_id != None else order_detail.product_id
+            product = get_object_or_404(Product, pk=order_detail.product_id)
+            order_detail.price = float(product.price) * int(order_detail.quantity)
+            order_detail.save()
+            serializer = OrderDetailSerializer(order_detail)
+            return Response(serializer.data)
     
     #Delete at /api/orderdetails/<pk>/
     def destroy(self, request, *args, **kwargs):
